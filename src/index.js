@@ -1,7 +1,9 @@
-// ---- Global ---- //
-const BASE_URL = "http://localhost:3000/toys"
+const API = "http://localhost:3000/toys";
+const toyCollection = document.getElementById("toy-collection");
 
-const toyCollection = document.querySelector("#toy-collection");
+// function el(elementName) {
+//   return document.getElementById(elementName)
+// };
 
 document.addEventListener("DOMContentLoaded", () => {
   const addBtn = document.querySelector("#new-toy-btn");
@@ -22,102 +24,87 @@ document.addEventListener("DOMContentLoaded", () => {
   toyForm.addEventListener("submit", (e) => {
     e.preventDefault();
 
-    addNewToy();
-
+    createNewToy();
     toyForm.reset();
   })
 });
 
-// Fetch Andy's Toys
 function getToys() {
-  fetch(`${BASE_URL}`)
-  .then(function(response) {
-    if(response.ok) {
-      return response.json()
-    } else {
-      throw new Error(`${response.status}: ${response.statusText}
-      `)
-    }
-  })
-  .then(function(response) {
-    // Once toys are fetched, render a card forEach toy by calling renderToys
-    response.forEach(function(toy) {
-      renderToys(toy)
-    })
-  })
-  .catch(function(err) {
-    console.log(err)
-  })
+  fetch(API)
+  .then(resp => resp.json())
+  .then(renderToys)
 };
 getToys();
 
-// Create toy cards
 function renderToys(toys) {
+  // console.log(toys)
+  toys.forEach(renderToy)
+}
+
+function renderToy(toys) {
   const toyCard = document.createElement("div");
-  toyCard.id = "toy-card";
   toyCard.className = "card";
 
-  // Adding toy info
+  toyCollection.append(toyCard);
+
   const toyName = document.createElement("h2");
+  toyName.className = "toy-name";
   toyName.textContent = toys.name;
 
   const toyImage = document.createElement("img");
-  toyImage.src = toys.image;
   toyImage.className = "toy-avatar";
-  
+  toyImage.src = toys.image;
+
   const toyLikes = document.createElement("p");
-  toyLikes.innerText = `Likes: ${toys.likes}`;
+  toyLikes.textContent = toys.likes;
 
-  const likesBttn = document.createElement("button");
-  likesBttn.id = toys.id;
-  likesBttn.className = "like-bttn";
-  likesBttn.innerText = "Like";
-  likesBttn.addEventListener("click", (e) => {
-    e.stopPropagation
-    ++toys.likes
-    toyLikes.innerText = `Likes: ${toys.likes}`
+  const likesButton = document.createElement("button");
+  likesButton.className = "like-btn"
+  likesButton.id = toys.id;
+  likesButton.textContent = "Like ❤️"
 
-    // PATCH request
-    fetch(`${BASE_URL}/${toys.id}`), {
+  likesButton.addEventListener("click", (e) => {
+    e.stopPropagation();
+    ++toys.likes;
+    toyLikes.innerText = `${toys.likes}`
+
+    fetch(`${API}/${toys.id}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
         "Accept": "application/json"
       },
-      body: JSON.stringify({"likes": toys.likes})
-    }
+      body: JSON.stringify({
+        "likes": toys.likes
+      })
+    })
   })
-  
-  const deleteBttn = document.createElement("button");
-  deleteBttn.className = "delete-bttn";
-  deleteBttn.textContent = "Delete"
-  deleteBttn.addEventListener("click", (e) => {
-    e.stopPropagation
 
-    // DELETE request
-    fetch(`${BASE_URL}/${toys.id}`, {
+  const deleteButton = document.createElement("button");
+  deleteButton.className = "delete-btn";
+  deleteButton.id = toys.id;
+  deleteButton.textContent = "Delete";
+
+  deleteButton.addEventListener("click", (e) => {
+    e.stopPropagation();
+
+    fetch(`${API}/${toys.id}`, {
       method: "DELETE"
     })
-    .then(function(response) {
-      return response.json();
-    })
-    .then(function() {
-      toyCard.remove();
-    })
+    .then(resp => resp.json())
+    .then(() => toyCard.remove())
   })
 
-  toyCard.append(toyName, toyImage, toyLikes, likesBttn, deleteBttn);
-
-  toyCollection.append(toyCard);
+  toyCard.append(toyName, toyImage, toyLikes, likesButton, deleteButton);
 };
 
-function addNewToy() {
-  // POST request
-  fetch("http://localhost:3000/toys", {
+function createNewToy() {
+
+  fetch(API, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Accept: "application/json"
+      "Accept": "application/json"
     },
     body: JSON.stringify({
       "name": "Jessie",
@@ -125,10 +112,6 @@ function addNewToy() {
       "likes": 0
     })
   })
-  .then(function(response) {
-    return response.json()
-  })
-  .then(function(toys) {
-    renderToys(toys)
-  });
+  .then(resp => resp.json())
+  .then(newToy => renderToy(newToy))
 };
